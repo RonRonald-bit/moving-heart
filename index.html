@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="uz">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Moving Heart Animation</title>
+    <style>
+        body,
+        html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        canvas {
+            display: block;
+        }
+    </style>
+</head>
+
+<body>
+
+    <canvas id="heartCanvas"></canvas>
+
+    <script>
+        const canvas = document.getElementById("heartCanvas");
+        const ctx = canvas.getContext("2d");
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener("resize", resizeCanvas);
+        resizeCanvas();
+
+        let scaleMultiplier = 1.0;
+        let growing = true;
+        let maxPoints = 0;
+
+        const text = "you love me?";
+        const totalLayers = 6;
+        const pointsPerLayer = 120;
+        const totalPossiblePoints = totalLayers * pointsPerLayer;
+
+        function draw() {
+            // Qora fon
+            ctx.fillStyle = "#000000";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+
+            ctx.fillStyle = "#ffb6c1"; // Pushti rang
+            ctx.font = "bold 9px Arial";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+
+            let currentPoint = 0;
+
+            for (let scaleLayer = 11; scaleLayer < 17; scaleLayer++) {
+                const currentScale = scaleLayer * scaleMultiplier;
+
+                for (let i = 0; i < pointsPerLayer; i++) {
+                    if (currentPoint > maxPoints) {
+                        break;
+                    }
+
+                    const angle = i * (Math.PI * 2) / pointsPerLayer;
+
+                    // Yurak formulasi
+                    const x = 16 * Math.pow(Math.sin(angle), 3) * currentScale;
+                    const y = (13 * Math.cos(angle)
+                        - 5 * Math.cos(2 * angle)
+                        - 2 * Math.cos(3 * angle)
+                        - Math.cos(4 * angle)) * currentScale;
+
+                    const pixelX = centerX + x;
+                    const pixelY = centerY - y;
+
+                    ctx.fillText(text, pixelX, pixelY);
+                    currentPoint++;
+                }
+            }
+
+            // --- SEKINLASHTIRILGAN SOZLAMALAR --- //
+
+            // 1. Matn nuqtalarining paydo bo'lish tezligi (4 dan 1 ga tushirildi)
+            if (maxPoints < totalPossiblePoints) {
+                maxPoints += 1;
+            }
+
+            // 2. Pulsatsiya (urish) tezligi (0.005 dan 0.002 ga tushirildi)
+            const speed = 0.002;
+
+            if (growing) {
+                scaleMultiplier += speed;
+                if (scaleMultiplier >= 1.15) growing = false;
+            } else {
+                scaleMultiplier -= speed;
+                if (scaleMultiplier <= 0.90) growing = true;
+            }
+
+            requestAnimationFrame(draw);
+        }
+
+        draw();
+    </script>
+
+</body>
+
+</html>
