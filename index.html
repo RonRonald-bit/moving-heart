@@ -1,32 +1,41 @@
 <!DOCTYPE html>
 <html lang="uz">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Moving Heart Animation</title>
+    <title>Do you love me?</title>
     <style>
-        body,
-        html {
+        body, html {
             margin: 0;
             padding: 0;
             width: 100%;
             height: 100%;
             overflow: hidden;
-            background-color: #000;
+            background: #070707;
             display: flex;
             justify-content: center;
             align-items: center;
+            font-family: 'Segoe UI', system-ui, sans-serif;
         }
 
         canvas {
             display: block;
         }
+
+        .vignette {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            background: radial-gradient(circle at center, transparent 35%, rgba(0,0,0,0.85) 100%);
+            z-index: 10;
+        }
     </style>
 </head>
-
 <body>
-
+    <div class="vignette"></div>
     <canvas id="heartCanvas"></canvas>
 
     <script>
@@ -40,41 +49,93 @@
         window.addEventListener("resize", resizeCanvas);
         resizeCanvas();
 
+        // ================== SETTINGS ==================
         let scaleMultiplier = 1.0;
         let growing = true;
         let maxPoints = 0;
 
         const text = "you love me?";
-        const totalLayers = 6;
-        const pointsPerLayer = 120;
+        const totalLayers = 7;
+        const pointsPerLayer = 145;
         const totalPossiblePoints = totalLayers * pointsPerLayer;
 
+        // Floating small hearts (kamroq va xira)
+        const floatingHearts = [];
+        for (let i = 0; i < 18; i++) {
+            floatingHearts.push({
+                x: Math.random() * canvas.width,
+                y: Math.random() * canvas.height,
+                size: Math.random() * 6 + 3,
+                speed: Math.random() * 0.3 + 0.1,
+                opacity: Math.random() * 0.25 + 0.08,
+                angle: Math.random() * Math.PI * 2
+            });
+        }
+
+        function drawHeartShape(x, y, size, color, alpha = 1) {
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.scale(size / 16, size / 16);
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            for (let t = 0; t < Math.PI * 2; t += 0.01) {
+                const hx = 16 * Math.pow(Math.sin(t), 3);
+                const hy = -(13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t));
+                ctx.lineTo(hx, hy);
+            }
+            ctx.closePath();
+            ctx.fillStyle = color;
+            ctx.globalAlpha = alpha;
+            ctx.fill();
+            ctx.restore();
+        }
+
         function draw() {
-            // Qora fon
-            ctx.fillStyle = "#000000";
+            // Qorong‘iroq fon
+            ctx.fillStyle = "#070707";
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
             const centerX = canvas.width / 2;
-            const centerY = canvas.height / 2;
+            const centerY = canvas.height / 2 - 15;
 
-            ctx.fillStyle = "#ffb6c1"; // Pushti rang
-            ctx.font = "bold 9px Arial";
+            // ===== Floating hearts (juda xira) =====
+            floatingHearts.forEach(h => {
+                h.y -= h.speed;
+                h.x += Math.sin(h.angle) * 0.25;
+                h.angle += 0.008;
+
+                if (h.y < -20) {
+                    h.y = canvas.height + 20;
+                    h.x = Math.random() * canvas.width;
+                }
+
+                drawHeartShape(h.x, h.y, h.size, "#c45c7a", h.opacity);
+            });
+
+            // ===== Asosiy yurak =====
+            ctx.font = "bold 11px 'Segoe UI', Arial, sans-serif";
             ctx.textAlign = "center";
             ctx.textBaseline = "middle";
 
             let currentPoint = 0;
 
-            for (let scaleLayer = 11; scaleLayer < 17; scaleLayer++) {
-                const currentScale = scaleLayer * scaleMultiplier;
+            for (let scaleLayer = 10; scaleLayer < 17; scaleLayer++) {
+                // Yurakni biroz kengroq qildim (1.18 koeffitsient)
+                const currentScale = scaleLayer * scaleMultiplier * 1.18;
+
+                // Ranglar yumshoqroq va xira
+                const progress = (scaleLayer - 10) / 6;
+                const r = 220;
+                const g = Math.floor(120 - progress * 40);
+                const b = Math.floor(145 - progress * 30);
+                ctx.fillStyle = `rgb(${r}, ${g}, ${b})`;
 
                 for (let i = 0; i < pointsPerLayer; i++) {
-                    if (currentPoint > maxPoints) {
-                        break;
-                    }
+                    if (currentPoint > maxPoints) break;
 
-                    const angle = i * (Math.PI * 2) / pointsPerLayer;
+                    const angle = (i / pointsPerLayer) * Math.PI * 2;
 
-                    // Yurak formulasi
+                    // Yurak formulasi + biroz kengaytirilgan
                     const x = 16 * Math.pow(Math.sin(angle), 3) * currentScale;
                     const y = (13 * Math.cos(angle)
                         - 5 * Math.cos(2 * angle)
@@ -84,27 +145,31 @@
                     const pixelX = centerX + x;
                     const pixelY = centerY - y;
 
+                    // Yorug‘likni sezilarli kamaytirdim
+                    ctx.shadowColor = "rgba(180, 80, 110, 0.35)";
+                    ctx.shadowBlur = 4;
+
                     ctx.fillText(text, pixelX, pixelY);
                     currentPoint++;
                 }
             }
 
-            // --- SEKINLASHTIRILGAN SOZLAMALAR --- //
+            ctx.shadowBlur = 0;
 
-            // 1. Matn nuqtalarining paydo bo'lish tezligi (4 dan 1 ga tushirildi)
+            // Juda sekin paydo bo‘lish
             if (maxPoints < totalPossiblePoints) {
-                maxPoints += 1;
+                maxPoints += 0.55;
             }
 
-            // 2. Pulsatsiya (urish) tezligi (0.005 dan 0.002 ga tushirildi)
-            const speed = 0.002;
+            // Juda yumshoq urish
+            const speed = 0.0010;
 
             if (growing) {
                 scaleMultiplier += speed;
-                if (scaleMultiplier >= 1.15) growing = false;
+                if (scaleMultiplier >= 1.10) growing = false;
             } else {
                 scaleMultiplier -= speed;
-                if (scaleMultiplier <= 0.90) growing = true;
+                if (scaleMultiplier <= 0.93) growing = true;
             }
 
             requestAnimationFrame(draw);
@@ -112,7 +177,5 @@
 
         draw();
     </script>
-
 </body>
-
 </html>
